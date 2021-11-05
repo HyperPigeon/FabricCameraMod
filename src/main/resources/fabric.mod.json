@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "camera",
+  "version": "1.0.0",
+  
+  "name": "Camera",
+  "description": "Mod Description.",
+  "authors": [
+    "Me!"
+  ],
+  
+  "icon": "assets/camera/icon.png",
+  "license": "No Licence.",
+  
+  "environment": "*",
+  
+  "entrypoints": {
+    "main": [
+      "net.hyper_pigeon.camera.Camera"
+    ],
+    "client": [
+      "net.hyper_pigeon.camera.client.CameraClient"
+    ]
+  },
+  
+  "requires": {
+    "fabricloader": ">=0.4.0"
+  },
+  
+  "mixins": [
+    "camera.mixins.json"
+  ]
+}

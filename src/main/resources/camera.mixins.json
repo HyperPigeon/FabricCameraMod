@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "package": "net.hyper_pigeon.camera.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "MouseMixin"
+  ],
+  "client": [
+  ],
+  "server": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
