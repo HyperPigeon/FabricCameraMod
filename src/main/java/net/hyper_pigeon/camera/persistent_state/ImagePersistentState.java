@@ -50,10 +50,16 @@ public class ImagePersistentState extends PersistentState {
 
     public void addByteArray(String id,byte[] bytes){
         this.imageTextures.put(id,bytes);
+        this.markDirty();
     }
 
     public void appendByteArray(String id, byte[] append){
         this.imageTextures.put(id, ArrayUtils.addAll(imageTextures.get(id),append));
+        this.markDirty();
+    }
+
+    public byte[] getByteArray(String id){
+        return imageTextures.get(id);
     }
 
     public void removeByteArray(String id,byte[] bytes){
@@ -62,5 +68,9 @@ public class ImagePersistentState extends PersistentState {
 
     public static ImagePersistentState get(ServerWorld world) {
         return world.getPersistentStateManager().getOrCreate(() -> new ImagePersistentState("ImageInfo"), "ImageInfo");
+    }
+
+    public int getSize(){
+        return imageTextures.size();
     }
 }

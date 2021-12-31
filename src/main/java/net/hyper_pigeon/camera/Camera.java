@@ -4,13 +4,19 @@ import com.google.common.primitives.Longs;
 import me.shedaniel.autoconfig.AutoConfig;
 import me.shedaniel.autoconfig.serializer.JanksonConfigSerializer;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.entity.FabricEntityTypeBuilder;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.hyper_pigeon.camera.config.CameraConfig;
+import net.hyper_pigeon.camera.entity.ImageEntity;
 import net.hyper_pigeon.camera.items.CameraItem;
 import net.hyper_pigeon.camera.items.ImageItem;
 import net.hyper_pigeon.camera.networking.CameraNetworkingConstants;
 import net.hyper_pigeon.camera.persistent_state.ImagePersistentState;
 import net.minecraft.client.texture.NativeImage;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityDimensions;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.SpawnGroup;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
@@ -34,6 +40,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.zip.*;
 
@@ -48,6 +55,9 @@ public class Camera implements ModInitializer {
 
 	public static CameraConfig CONFIG =  AutoConfig.register(CameraConfig.class, JanksonConfigSerializer::new).getConfig();
 
+	public static EntityType<ImageEntity> IMAGE_ENTITY = Registry.register(Registry.ENTITY_TYPE, new Identifier("camera", "image_entity"),
+			FabricEntityTypeBuilder.create(SpawnGroup.MISC, ImageEntity::new).size(EntityDimensions.fixed(0.6F, 0.7F)).build());
+
 	public void onInitialize() {
 		Registry.register(Registry.ITEM,new Identifier("camera", "camera"), CAMERA_ITEM);
 		Registry.register(Registry.ITEM, new Identifier("camera", "image"), IMAGE_ITEM);
@@ -55,7 +65,8 @@ public class Camera implements ModInitializer {
 		ServerPlayNetworking.registerGlobalReceiver(CameraNetworkingConstants.SEND_SCREENSHOT_IMAGE, (server,player, handler, buf, responseSender) -> {
 
 			//ByteBuffer byteBuffer = ByteBuffer.wrap(buf.readByteArray());
-			int imageId = buf.readInt();
+			//int imageId = player.getServerWorld().getNextMapId();
+			UUID imageId = buf.readUuid();
 			//int[] dimArray = buf.readIntArray();
 			int width = (int) buf.readDouble();
 			int height = (int) buf.readFloat();
@@ -86,12 +97,13 @@ public class Camera implements ModInitializer {
 			//byte[] finalImageBytes = imageBytes;
 			server.execute(() -> {
 				ItemStack imageItemStack = new ItemStack(Camera.IMAGE_ITEM);
-				imageItemStack.getOrCreateTag().putInt("id",imageId);
+				imageItemStack.getOrCreateTag().putUuid("id",imageId);
 				imageItemStack.getOrCreateTag().putString("imageIdentifier", identifier);
 				imageItemStack.getOrCreateTag().putInt("width",width);
 				imageItemStack.getOrCreateTag().putInt("height",height);
 				//imageItemStack.getOrCreateTag().putString("base64ImageBytes",base64ImageBytes);
-				//imageItemStack.getOrCreateTag().putByteArray("imageBytes", finalImageBytes);
+				//System.out.println("length:" + ImagePersistentState.get(player.getServerWorld()).getByteArray(identifier).length);
+				imageItemStack.getOrCreateTag().putByteArray("imageBytes", ImagePersistentState.get(player.getServerWorld()).getByteArray(identifier));
 				//imageItemStack.getOrCreateTag().putInt("imageBytesLength", (int) length);
 				player.giveItemStack(imageItemStack);
 			});
@@ -112,21 +124,21 @@ public class Camera implements ModInitializer {
 
 		ServerPlayNetworking.registerGlobalReceiver(CameraNetworkingConstants.SEND_IMAGE_BYTES, ((server, player, handler, buf, responseSender) ->
 		{
-			String identifier = buf.readString(32767);
+			String identifier = buf.readString();
 			byte[] bytes = buf.readByteArray();
+			//System.out.println(identifier);
 			ImagePersistentState imagePersistentState = ImagePersistentState.get(player.getServerWorld());
-
 			server.execute(() -> {
-				if (imagePersistentState.containsID(identifier)){
+				if (!imagePersistentState.containsID(identifier)){
 					imagePersistentState.addByteArray(identifier,bytes);
 				}
 				else {
 					imagePersistentState.appendByteArray(identifier,bytes);
 				}
 			});
-
-
 		}));
+
+
 
 	}
 

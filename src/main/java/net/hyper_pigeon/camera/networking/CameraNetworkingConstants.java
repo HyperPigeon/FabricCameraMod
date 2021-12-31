@@ -8,4 +8,6 @@ public class CameraNetworkingConstants {
     public static Identifier SEND_TO_SERVER = new Identifier("camera:send_to_server");
 
     public static Identifier SEND_IMAGE_BYTES = new Identifier("camera:send_bytes");
+
+    public static Identifier GET_IMAGE_BYTES = new Identifier("camera:get_bytes");
 }

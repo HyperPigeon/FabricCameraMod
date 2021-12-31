@@ -1,20 +1,14 @@
 package net.hyper_pigeon.camera.client.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
-import net.hyper_pigeon.camera.Camera;
-import net.hyper_pigeon.camera.networking.CameraNetworkingConstants;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
-import net.minecraft.client.texture.TextureUtil;
 import net.minecraft.client.util.NarratorManager;
-import net.minecraft.client.util.ScreenshotUtils;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketByteBuf;
@@ -25,7 +19,6 @@ import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
@@ -34,18 +27,17 @@ import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.zip.DataFormatException;
+import java.util.UUID;
 
 
 public class ImageScreen extends Screen {
 
     ItemStack stack;
     Identifier imageIdentifier;
-    final int imageID;
+    final UUID imageID;
     final int imageWidth;
     final int imageHeight;
     final byte[] imageBytes;
@@ -59,11 +51,12 @@ public class ImageScreen extends Screen {
         super(NarratorManager.EMPTY);
         stack = itemStack;
         imageIdentifier =  Identifier.tryParse(stack.getTag().getString("imageIdentifier"));
-        imageID = stack.getTag().getInt("id");
+        imageID = stack.getTag().getUuid("id");
         imageWidth = stack.getTag().getInt("width");
         imageHeight = stack.getTag().getInt("height");
         //base64imageBytes = stack.getTag().getString("base64ImageBytes");
         imageBytes = stack.getTag().getByteArray("imageBytes");
+        //imageBytes = image_bytes;
     }
 
     public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
@@ -79,17 +72,16 @@ public class ImageScreen extends Screen {
             else {
                 NativeImage nativeImage = null;
                 try {
-                    //System.out.println(Base64.encodeBase64String(imageBytes));
-                    //System.out.println(imageBytes.length);
+                    //System.out.println("length:" + imageBytes.length);
                     nativeImage = NativeImage.read((new ByteArrayInputStream(imageBytes)));
                     NativeImageBackedTexture nativeImageBackedTexture = new NativeImageBackedTexture(nativeImage);
-                    saveScreenshotInner(nativeImage,this.client.runDirectory,null);
-                    client.getTextureManager().registerDynamicTexture("camera/" + imageID,nativeImageBackedTexture);
+                    Identifier identifier = client.getTextureManager().registerDynamicTexture("camera/" + imageID,nativeImageBackedTexture);
+                    this.client.getTextureManager().bindTexture(identifier);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
 
-                this.client.getTextureManager().bindTexture(imageIdentifier);
+
                 drawImage(width, height, 100);
             }
 
@@ -155,9 +147,9 @@ public class ImageScreen extends Screen {
                 e.printStackTrace();
             }
 
-            if(Camera.CONFIG.saveImagesOnServer){
-                ClientPlayNetworking.send(CameraNetworkingConstants.SEND_TO_SERVER,packetByteBuf);
-            }
+//            if(Camera.CONFIG.saveImagesOnServer){
+//                ClientPlayNetworking.send(CameraNetworkingConstants.SEND_TO_SERVER,packetByteBuf);
+//            }
 
 
 
@@ -179,7 +171,7 @@ public class ImageScreen extends Screen {
 
     private void saveScreenshotInner(NativeImage image, File gameDirectory, @Nullable String fileName) {
         NativeImage nativeImage = image;
-        File file = new File(gameDirectory, "screenshots");
+        File file = new File(gameDirectory, "pictures");
         file.mkdir();
         File file3;
         if (fileName == null) {

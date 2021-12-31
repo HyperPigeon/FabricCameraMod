@@ -24,10 +24,8 @@ public class ImageItemRenderer {
             Identifier identifier = Identifier.tryParse(stack.getTag().getString("imageIdentifier"));
             MinecraftClient.getInstance().getTextureManager().bindTexture(identifier);
             RenderSystem.bindTexture(MinecraftClient.getInstance().getTextureManager().getTexture(identifier).getGlId());
-
             ItemRenderer itemRenderer = MinecraftClient.getInstance().getItemRenderer();
             BakedModel imageModel = itemRenderer.getHeldItemModel(stack, null,null);
-
             matrices.pop();
         }
 
