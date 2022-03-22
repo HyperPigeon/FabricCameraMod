@@ -2,6 +2,7 @@ package net.hyper_pigeon.camera.client.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.Tessellator;
@@ -88,23 +89,23 @@ public class ImageScreen extends Screen {
         }
     }
 
-    private void drawImage(int width, int height, float zLevel) {
+    public void drawImage(int width, int height, float zLevel) {
         RenderSystem.pushMatrix();
 
-        float imageWidth = 12F;
-        float imageHeight = 8F;
+        float imageWidth = (float) (MinecraftClient.getInstance().currentScreen.width*0.9);
+        float imageHeight = (float) (MinecraftClient.getInstance().currentScreen.height*0.9);
 
         Tessellator tessellator = Tessellator.getInstance();
         BufferBuilder buffer = tessellator.getBuffer();
         buffer.begin(GL11.GL_QUADS, VertexFormats.POSITION_TEXTURE);
 
-        float scale = 0.95F;
+        float scale = 0.9F;
 
         float ws = (float) width * scale;
         float hs = (float) height * scale;
 
         float rs = ws / hs;
-        float ri = imageWidth / imageHeight;
+        float ri = (float) imageWidth / (float) imageHeight;
 
         float hnew;
         float wnew;

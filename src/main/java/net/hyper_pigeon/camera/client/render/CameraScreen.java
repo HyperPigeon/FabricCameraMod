@@ -43,7 +43,7 @@ public class CameraScreen extends Screen {
                 client.options.hudHidden = true;
                 NativeImage nativeImage = ScreenshotUtils.takeScreenshot(client.getWindow().getWidth(), client.getWindow().getHeight(), client.getFramebuffer());
 
-                client.options.hudHidden = false;
+                client.options.hudHidden = isHUDhidden;
                 NativeImageBackedTexture nativeImageBackedTexture = new NativeImageBackedTexture(nativeImage);
 
                 Identifier identifier = client.getTextureManager().registerDynamicTexture("camera/" + imageId,nativeImageBackedTexture);

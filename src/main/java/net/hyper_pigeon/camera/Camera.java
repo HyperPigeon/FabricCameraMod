@@ -1,48 +1,55 @@
 package net.hyper_pigeon.camera;
 
-import com.google.common.primitives.Longs;
 import me.shedaniel.autoconfig.AutoConfig;
 import me.shedaniel.autoconfig.serializer.JanksonConfigSerializer;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.entity.FabricEntityTypeBuilder;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
+import net.hyper_pigeon.camera.block.ImageFrameBlock;
+import net.hyper_pigeon.camera.block.entity.ImageFrameBlockEntity;
+import net.hyper_pigeon.camera.client.render.ImageRenderer;
 import net.hyper_pigeon.camera.config.CameraConfig;
-import net.hyper_pigeon.camera.entity.ImageEntity;
+import net.hyper_pigeon.camera.entity.ImageFrameEntity;
 import net.hyper_pigeon.camera.items.CameraItem;
+import net.hyper_pigeon.camera.items.ImageFrameItem;
 import net.hyper_pigeon.camera.items.ImageItem;
 import net.hyper_pigeon.camera.networking.CameraNetworkingConstants;
 import net.hyper_pigeon.camera.persistent_state.ImagePersistentState;
+import net.minecraft.block.AbstractBlock;
+import net.minecraft.block.Material;
+import net.minecraft.block.MaterialColor;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.NativeImage;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
+import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
+import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.world.PersistentState;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.system.CallbackI;
 import org.lwjgl.system.MemoryStack;
 
 import javax.annotation.Nullable;
-import java.awt.*;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.UUID;
-import java.util.stream.Stream;
-import java.util.zip.*;
+import java.util.zip.DataFormatException;
+import java.util.zip.Deflater;
+import java.util.zip.Inflater;
 
 public class Camera implements ModInitializer {
 	public static final Logger LOGGER = LogManager.getLogger("Camera");
@@ -55,12 +62,27 @@ public class Camera implements ModInitializer {
 
 	public static CameraConfig CONFIG =  AutoConfig.register(CameraConfig.class, JanksonConfigSerializer::new).getConfig();
 
-	public static EntityType<ImageEntity> IMAGE_ENTITY = Registry.register(Registry.ENTITY_TYPE, new Identifier("camera", "image_entity"),
-			FabricEntityTypeBuilder.create(SpawnGroup.MISC, ImageEntity::new).size(EntityDimensions.fixed(0.6F, 0.7F)).build());
+	public static final ImageFrameBlock IMAGE_FRAME_BLOCK = new ImageFrameBlock(AbstractBlock.Settings.of(Material.WOOD, MaterialColor.BROWN).strength(1.0F).sounds(BlockSoundGroup.WOOD));
+	public static final ImageFrameItem IMAGE_FRAME_ITEM = new ImageFrameItem(IMAGE_FRAME_BLOCK,new Item.Settings().maxCount(64).group(ItemGroup.DECORATIONS));
+	public static final BlockEntityType<ImageFrameBlockEntity> IMAGE_FRAME_BLOCK_ENTITY = Registry.register(Registry.BLOCK_ENTITY_TYPE,
+			new Identifier("camera","image_frame_block"),
+			BlockEntityType.Builder.create(ImageFrameBlockEntity::new, IMAGE_FRAME_BLOCK).build(null));
+
+//	public static EntityType<ImageFrameEntity> IMAGE_FRAME_ENTITY = Registry.register(Registry.ENTITY_TYPE,
+//			new Identifier("camera","image_frame_entity"),
+//			FabricEntityTypeBuilder.<ImageFrameEntity>create(SpawnGroup.MISC, ImageFrameEntity::new).size(EntityDimensions.fixed(0.5F, 0.5F))
+//					.trackable(20,4).build());
+
+//	public static EntityType<ImageEntity> IMAGE_ENTITY = Registry.register(Registry.ENTITY_TYPE, new Identifier("camera", "image_entity"),
+//			FabricEntityTypeBuilder.create(SpawnGroup.MISC, ImageEntity::new).size(EntityDimensions.fixed(0.6F, 0.7F)).build());
 
 	public void onInitialize() {
 		Registry.register(Registry.ITEM,new Identifier("camera", "camera"), CAMERA_ITEM);
 		Registry.register(Registry.ITEM, new Identifier("camera", "image"), IMAGE_ITEM);
+
+		Registry.register(Registry.BLOCK, new Identifier("camera","image_frame"),IMAGE_FRAME_BLOCK);
+		Registry.register(Registry.ITEM, new Identifier("camera","image_frame"), IMAGE_FRAME_ITEM);
+
 
 		ServerPlayNetworking.registerGlobalReceiver(CameraNetworkingConstants.SEND_SCREENSHOT_IMAGE, (server,player, handler, buf, responseSender) -> {
 
